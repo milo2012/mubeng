@@ -7,6 +7,7 @@ import (
 	"net/url"
 
 	"golang.org/x/net/proxy"
+        "h12.io/socks"
 )
 
 // Transport to auto-switch transport between HTTP/S or SOCKSv5 proxies.
@@ -17,13 +18,18 @@ func Transport(p string) (tr *http.Transport, err error) {
 		return nil, err
 	}
 
-	dialer, err := proxy.SOCKS5("tcp", proxyURL.Host, getAuth(proxyURL), proxy.Direct)
-	if err != nil {
-		return nil, err
-	}
-
 	switch proxyURL.Scheme {
+	case "socks4":
+          	dialer := socks.Dial("socks4://"+proxyURL.Host)
+		tr = &http.Transport{
+			Dial: dialer,
+		}
 	case "socks5":
+	        dialer, err := proxy.SOCKS5("tcp", proxyURL.Host, getAuth(proxyURL), proxy.Direct)
+	        if err != nil {
+	     	     return nil, err
+	        }
+
 		tr = &http.Transport{
 			Dial: dialer.Dial,
 		}
