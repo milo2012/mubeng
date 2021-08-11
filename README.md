@@ -53,7 +53,7 @@
 - **Proxy IP rotator**: Rotates your IP address for every specific request.
 - **Proxy checker**: Check your proxy IP which is still alive.
 - **All HTTP/S methods** are supported.
-- **HTTP & SOCKSv5** proxy protocols apply.
+- **HTTP & SOCKSv4/SOCKSv5** proxy protocols apply.
 - **All parameters & URIs are passed**.
 - **Easy to use**: You can just run it against your proxy file, and choose the action you want!
 - **Cross-platform**: whether you are Windows, Linux, Mac, or even Raspberry Pi, you can run it very well.
