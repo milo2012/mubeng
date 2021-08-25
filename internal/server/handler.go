@@ -15,67 +15,74 @@ func (p *Proxy) onRequest(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Reque
 	resChan := make(chan *http.Response)
 	errChan := make(chan error, 1)
 
-	// Rotate proxy IP for every AFTER request
-	if (rotate == "") || (ok >= p.Options.Rotate) {
-		rotate = p.Options.ProxyManager.NextProxy()
-		if ok >= p.Options.Rotate {
-			ok = 1
+	for {
+		// Rotate proxy IP for every AFTER request
+		if (rotate == "") || (ok >= p.Options.Rotate) {
+			rotate = p.Options.ProxyManager.NextProxy()
+			if ok >= p.Options.Rotate {
+				ok = 1
+			}
+		} else {
+			ok++
 		}
-	} else {
-		ok++
-	}
+		log.Debugf("Rotating Proxies: %s", rotate)
 
-	go func() {
-		if (req.URL.Scheme != "http") && (req.URL.Scheme != "https") {
-			errChan <- fmt.Errorf("Unsupported protocol scheme: %s", req.URL.Scheme)
-			return
+		go func() {
+			if (req.URL.Scheme != "http") && (req.URL.Scheme != "https") {
+				errChan <- fmt.Errorf("Unsupported protocol scheme: %s", req.URL.Scheme)
+				return
+			}
+
+			log.Debugf("%s %s %s", req.RemoteAddr, req.Method, req.URL)
+
+			tr, err := mubeng.Transport(rotate)
+			if err != nil {
+				errChan <- err
+				return
+			}
+
+			proxy := &mubeng.Proxy{
+				Address:   rotate,
+				Transport: tr,
+			}
+
+			client, req = proxy.New(req)
+			client.Timeout = p.Options.Timeout
+			if p.Options.Verbose {
+				client.Transport = dump.RoundTripper(tr)
+			}
+
+			resp, err := client.Do(req)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			defer resp.Body.Close()
+
+			// Copying response body
+			buf, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				errChan <- err
+				return
+			}
+
+			resp.Body = ioutil.NopCloser(bytes.NewBuffer(buf))
+			resChan <- resp
+		}()
+
+		select {
+		case err := <-errChan:
+			log.Errorf("%s %s", req.RemoteAddr, err)
+			if (! p.Options.Switch) {
+				return req, goproxy.NewResponse(req, mime, http.StatusInternalServerError, "Proxy Server Error")
+				break
+			}
+		case resp := <-resChan:
+			log.Debug(req.RemoteAddr, " ", resp.Status)
+			return req, resp
+			break
 		}
-
-		log.Debugf("%s %s %s", req.RemoteAddr, req.Method, req.URL)
-
-		tr, err := mubeng.Transport(rotate)
-		if err != nil {
-			errChan <- err
-			return
-		}
-
-		proxy := &mubeng.Proxy{
-			Address:   rotate,
-			Transport: tr,
-		}
-
-		client, req = proxy.New(req)
-		client.Timeout = p.Options.Timeout
-		if p.Options.Verbose {
-			client.Transport = dump.RoundTripper(tr)
-		}
-
-		resp, err := client.Do(req)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		defer resp.Body.Close()
-
-		// Copying response body
-		buf, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			errChan <- err
-			return
-		}
-
-		resp.Body = ioutil.NopCloser(bytes.NewBuffer(buf))
-		resChan <- resp
-	}()
-
-	select {
-	case err := <-errChan:
-		log.Errorf("%s %s", req.RemoteAddr, err)
-		return req, goproxy.NewResponse(req, mime, http.StatusInternalServerError, "Proxy Server Error")
-	case resp := <-resChan:
-		log.Debug(req.RemoteAddr, " ", resp.Status)
-		return req, resp
-	}
+	} 
 }
 
 // onConnect handles CONNECT method

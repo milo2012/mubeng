@@ -31,6 +31,9 @@ func Options() *common.Options {
 	flag.BoolVar(&opt.Verbose, "v", false, "")
 	flag.BoolVar(&opt.Verbose, "verbose", false, "")
 
+	flag.BoolVar(&opt.Switch, "s", false, "")
+	flag.BoolVar(&opt.Switch, "switch", false, "")
+
 	flag.BoolVar(&opt.Daemon, "d", false, "")
 	flag.BoolVar(&opt.Daemon, "daemon", false, "")
 

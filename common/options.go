@@ -15,6 +15,7 @@ type Options struct {
 	Timeout      time.Duration
 	Rotate       int
 	Verbose      bool
+	Switch       bool
 	Output       string
 	Result       *os.File
 	ProxyManager *proxymanager.ProxyManager
