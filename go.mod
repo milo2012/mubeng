@@ -18,5 +18,6 @@ require (
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/tcnksm/go-latest v0.0.0-20170313132115-e3007ae9052e
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
+	golang.org/x/text v0.3.6 // indirect
 	h12.io/socks v1.0.3 // indirect
 )

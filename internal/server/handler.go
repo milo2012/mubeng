@@ -25,7 +25,7 @@ func (p *Proxy) onRequest(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Reque
 		} else {
 			ok++
 		}
-		log.Debugf("Rotating Proxies: %s", rotate)
+		//log.Debugf("Rotating Proxies: %s", rotate)
 
 		go func() {
 			if (req.URL.Scheme != "http") && (req.URL.Scheme != "https") {
